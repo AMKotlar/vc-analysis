@@ -3,7 +3,7 @@
 An interactive model of how a commodity processor can govern what it tells customers
 about its supply chain, and prove it when an assurance provider asks.
 
-**View the model:** https://AMKotlar.github.io/REPO/
+**View the model:** https://AMKotlar.github.io/vc-analysis/
 **Methodology note:** [basis-of-preparation.pdf](basis-of-preparation.pdf)
 
 ---
