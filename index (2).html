@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cocoa traceability and claims integrity — working model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=Azeret+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --canopy:#14211C;
+  --surface:#1B2B24;
+  --surface-2:#22362D;
+  --line:#31473C;
+  --line-soft:#293D34;
+  --bone:#EAE6D9;
+  --bone-dim:#9BAA9F;
+  --leaf:#4E9468;
+  --leaf-deep:#2F6B47;
+  --alert:#E0577F;
+  --bean:#C98B3A;
+  --sky:#6FA8BF;
+  --serif:"Source Serif 4",Georgia,serif;
+  --sans:"Archivo",system-ui,sans-serif;
+  --mono:"Azeret Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--canopy);color:var(--bone);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--serif);font-weight:600;line-height:1.18;margin:0}
+p{margin:0 0 .9em}
+button{font-family:inherit}
+:focus-visible{outline:2px solid var(--bean);outline-offset:2px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:1220px;margin:0 auto;padding:0 30px}
+
+/* ---------- masthead ---------- */
+.top{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#101A16,var(--canopy))}
+.top .wrap{padding-top:30px;padding-bottom:0}
+.eyebrow{font-family:var(--mono);font-size:11.5px;color:var(--bone-dim);letter-spacing:.06em;margin-bottom:14px}
+h1{font-size:clamp(30px,4.4vw,50px);letter-spacing:-.015em;max-width:19ch}
+.deck{font-family:var(--serif);font-size:clamp(17px,1.9vw,20px);color:var(--bone-dim);max-width:60ch;margin-top:14px;line-height:1.45}
+.meta{display:flex;flex-wrap:wrap;gap:0;margin-top:26px;border-top:1px solid var(--line-soft)}
+.meta div{padding:11px 20px 13px 0;margin-right:20px;border-right:1px solid var(--line-soft)}
+.meta div:last-child{border-right:none}
+.meta dt{font-size:11.5px;color:var(--bone-dim);margin-bottom:2px}
+.meta dd{margin:0;font-family:var(--mono);font-size:12.5px}
+
+/* ---------- tabs ---------- */
+.tabs{position:sticky;top:0;z-index:20;background:rgba(20,33,28,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.tabs .wrap{display:flex;gap:2px;overflow-x:auto;padding-top:0;padding-bottom:0}
+.tabs button{
+  background:none;border:none;color:var(--bone-dim);font-size:14px;padding:15px 16px;
+  cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;
+}
+.tabs button:hover{color:var(--bone)}
+.tabs button[aria-selected="true"]{color:var(--bone);border-bottom-color:var(--bean);font-weight:500}
+
+main .wrap{padding-top:38px;padding-bottom:80px}
+section[hidden]{display:none}
+h2.mod{font-size:clamp(24px,2.8vw,32px);letter-spacing:-.01em}
+.kicker{color:var(--bone-dim);font-size:14px;margin:8px 0 30px;max-width:70ch}
+h3.sub{font-size:21px;margin:44px 0 6px}
+h3.sub + .subnote{color:var(--bone-dim);font-size:13.5px;margin:0 0 18px;max-width:74ch}
+.prose{max-width:66ch;font-size:15.5px}
+.prose p{color:#D3D2C6}
+
+/* ---------- cards / panels ---------- */
+.panel{background:var(--surface);border:1px solid var(--line);padding:24px 26px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+
+/* ---------- headline stats ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);background:var(--surface)}
+.stats div{padding:20px 22px;border-right:1px solid var(--line)}
+.stats div:last-child{border-right:none}
+.stats .n{font-family:var(--mono);font-size:clamp(24px,3vw,34px);line-height:1;display:block}
+.stats .l{font-size:12.5px;color:var(--bone-dim);margin-top:9px;display:block;line-height:1.4}
+.n.alert{color:var(--alert)}
+.n.leaf{color:var(--leaf)}
+.n.bean{color:var(--bean)}
+
+/* ---------- ladder ---------- */
+.ladder{margin:8px 0 0}
+.rung{
+  display:grid;grid-template-columns:190px 1fr 128px;gap:18px;align-items:center;
+  padding:13px 0;border-bottom:1px solid var(--line-soft);cursor:pointer;
+}
+.rung:hover .rung-name{color:#fff}
+.rung[aria-pressed="true"]{background:var(--surface-2)}
+.rung-name{font-size:14.5px;font-weight:500;padding-left:10px;border-left:3px solid;transition:color .15s}
+.rung-name small{display:block;font-weight:400;font-size:12px;color:var(--bone-dim);padding-top:2px}
+.rung-track{height:26px;background:var(--surface);position:relative}
+.rung-fill{height:100%;transition:width .7s cubic-bezier(.2,.7,.3,1)}
+.rung-val{text-align:right;font-family:var(--mono);font-size:14px}
+.rung-val small{display:block;font-size:11.5px;color:var(--bone-dim)}
+.ladder-detail{background:var(--surface-2);border-left:3px solid var(--bean);padding:18px 22px;margin-top:14px}
+.ladder-detail h4{font-size:17px;margin-bottom:6px}
+.ladder-detail .can,.ladder-detail .cannot{font-size:14px;margin:8px 0;padding-left:24px;position:relative;line-height:1.5}
+.ladder-detail .can:before{content:"✓";position:absolute;left:0;color:var(--leaf);font-family:var(--mono)}
+.ladder-detail .cannot:before{content:"✕";position:absolute;left:0;color:var(--alert);font-family:var(--mono)}
+
+/* ---------- svg chart shells ---------- */
+.chart{width:100%;height:auto;display:block;overflow:visible}
+.chart text{font-family:var(--sans);fill:var(--bone-dim);font-size:12px}
+.chart .lab{fill:var(--bone);font-size:13px}
+.chart .fig{font-family:var(--mono);font-size:12px;fill:var(--bone)}
+.seg{cursor:pointer}
+.seg:hover{opacity:.78}
+.legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:16px;font-size:12.5px;color:var(--bone-dim)}
+.legend span{display:flex;align-items:center;gap:7px}
+.legend i{width:11px;height:11px;display:block}
+
+.tip{
+  position:fixed;pointer-events:none;background:#0C1512;border:1px solid var(--line);
+  padding:9px 12px;font-size:12.5px;z-index:60;opacity:0;transition:opacity .12s;max-width:250px;line-height:1.45;
+}
+.tip b{display:block;margin-bottom:3px;font-size:13px}
+.tip .mono{color:var(--bean)}
+
+/* ---------- timeline ---------- */
+.tl{position:relative;margin:14px 0 4px;padding-bottom:10px}
+.tl-axis{height:1px;background:var(--line);position:relative;margin:34px 0 0;min-height:200px}
+.tl-mark{position:absolute;top:0;width:22%;min-width:150px}
+.tl-mark .dot{width:12px;height:12px;background:var(--canopy);border:2px solid;margin:-6px 0 0;transform:rotate(45deg)}
+.tl-mark .d{font-family:var(--mono);font-size:12.5px;margin-top:14px}
+.tl-mark .t{font-size:12.5px;color:var(--bone-dim);line-height:1.4;margin-top:6px;padding-right:20px}
+.tl-mark .own{font-size:12px;margin-top:9px;padding-top:7px;border-top:1px solid var(--line-soft);color:var(--bean);padding-right:20px}
+.tl-now{position:absolute;top:-24px;left:0;font-family:var(--mono);font-size:11.5px;color:var(--bean)}
+
+/* ---------- tables ---------- */
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-size:12px;font-weight:500;color:var(--bone-dim);border-bottom:1px solid var(--line);padding:9px 12px 8px;vertical-align:bottom}
+td{border-bottom:1px solid var(--line-soft);padding:11px 12px;vertical-align:top}
+td.r,th.r{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+#claim-rows tr[data-row]{cursor:pointer}
+#claim-rows tr[data-row]:hover{background:var(--surface)}
+#claim-rows tr[aria-expanded="true"]{background:var(--surface)}
+.pill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;white-space:nowrap}
+.pill:before{content:"";width:8px;height:8px;flex:none;transform:rotate(45deg)}
+.p-ok:before{background:var(--leaf)}
+.p-cond:before{background:var(--bean)}
+.p-stop:before{background:var(--alert)}
+.det td{background:var(--surface-2);border-bottom:1px solid var(--line)}
+.verdict{font-family:var(--serif);font-size:16px;line-height:1.5;border-left:2px solid var(--bean);padding-left:14px;margin:2px 0 16px;max-width:82ch;color:#E4E1D3}
+.dg{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:18px 26px}
+.dg h5{margin:0 0 5px;font-family:var(--sans);font-size:12px;color:var(--bone-dim);font-weight:500}
+.dg p,.dg ul{margin:0;font-size:13px;line-height:1.5;color:#C6C8BD}
+.dg ul{padding-left:16px}
+.cid{font-family:var(--mono);font-size:12px;color:var(--bone-dim)}
+
+/* ---------- filters/controls ---------- */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.filters button,.seg-btn{
+  font-size:12.5px;background:none;color:var(--bone-dim);border:1px solid var(--line);
+  padding:6px 13px;cursor:pointer;
+}
+.filters button[aria-pressed="true"],.seg-btn[aria-pressed="true"]{background:var(--bone);color:var(--canopy);border-color:var(--bone);font-weight:500}
+select{font-family:var(--sans);font-size:14px;padding:9px 12px;background:var(--surface);color:var(--bone);border:1px solid var(--line);width:100%;border-radius:0}
+input[type=range]{width:100%;accent-color:var(--bean)}
+
+/* ---------- finding boxes ---------- */
+.finding{border:1px solid var(--alert);border-left-width:4px;background:rgba(224,87,127,.07);padding:17px 20px;margin:20px 0}
+.finding.amber{border-color:var(--bean);background:rgba(201,139,58,.07)}
+.finding h4{font-size:16px;margin-bottom:6px;font-family:var(--sans);font-weight:600}
+.finding p{margin:0;font-size:14px;line-height:1.55;color:#D8D6C9;max-width:82ch}
+
+/* ---------- desk ---------- */
+.quote{font-family:var(--serif);font-size:16.5px;line-height:1.5;border-left:2px solid var(--leaf);padding-left:15px;margin:6px 0 18px;max-width:64ch}
+.quote.bad{border-left-color:var(--alert);color:var(--bone-dim);text-decoration:line-through;text-decoration-color:var(--alert)}
+.pack{columns:2;column-gap:34px;font-size:13.5px;padding-left:18px;margin:0;color:#C6C8BD}
+.pack li{margin-bottom:6px;break-inside:avoid}
+
+.gates{counter-reset:g;list-style:none;padding:0;margin:16px 0 0}
+.gates li{counter-increment:g;display:grid;grid-template-columns:36px 1fr;gap:0 16px;padding:14px 0;border-bottom:1px solid var(--line-soft)}
+.gates li:before{content:counter(g);font-family:var(--mono);font-size:19px;color:var(--bean);grid-column:1;grid-row:1}
+.gates b{grid-column:2;font-size:14.5px;margin-bottom:3px}
+.gates span{grid-column:2;font-size:13.5px;color:var(--bone-dim);line-height:1.5;max-width:82ch}
+.raci td.c{font-family:var(--mono);text-align:center;font-size:12.5px}
+
+.note{font-size:12.5px;color:var(--bone-dim);line-height:1.55;max-width:82ch;margin-top:24px;padding-top:14px;border-top:1px solid var(--line-soft)}
+footer{border-top:1px solid var(--line);background:#101A16}
+footer .wrap{padding:26px 30px 40px;font-size:12.5px;color:var(--bone-dim);line-height:1.65}
+
+@media (max-width:900px){
+  .wrap{padding:0 18px}
+  .grid2,.grid3,.stats{grid-template-columns:1fr}
+  .stats div{border-right:none;border-bottom:1px solid var(--line)}
+  .rung{grid-template-columns:130px 1fr 90px;gap:10px}
+  .meta{display:block}
+  .meta div{border-right:none;border-bottom:1px solid var(--line-soft);margin-right:0;padding:9px 0 10px}
+  .meta div:last-child{border-bottom:none}
+  .pack{columns:1}
+  .tl-mark{width:120px}.tl-mark .up{width:120px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap">
+  <p class="eyebrow">Working model — cocoa processing and industrial chocolate</p>
+  <h1>What the chain can carry is what the claim can say</h1>
+  <p class="deck">A traceability and claims integrity model for a European cocoa processor, built so that every sentence sold to a customer can be traced to the physical system that supports it — and defended when an assurance provider asks.</p>
+  <dl class="meta">
+    <div><dt>Modelled operation</dt><dd>180,000 t annual grind</dd></div>
+    <div><dt>Origins</dt><dd>6 countries, 5 tiers</dd></div>
+    <div><dt>Data basis</dt><dd>Synthetic, illustrative</dd></div>
+    <div><dt>Prepared by</dt><dd>Ali Mehmandoostkotlar</dd></div>
+    <div><dt>Version</dt><dd>1.0 — September 2026</dd></div>
+  </dl>
+</div></header>
+
+<div class="tabs"><div class="wrap" role="tablist" aria-label="Sections">
+  <button role="tab" id="t-1" aria-controls="s-1" aria-selected="true">The position</button>
+  <button role="tab" id="t-2" aria-controls="s-2" aria-selected="false">Traceability</button>
+  <button role="tab" id="t-3" aria-controls="s-3" aria-selected="false">Claims and balance</button>
+  <button role="tab" id="t-4" aria-controls="s-4" aria-selected="false">Carbon consequence</button>
+  <button role="tab" id="t-5" aria-controls="s-5" aria-selected="false">Governance and customers</button>
+</div></div>
+
+<main><div class="wrap">
+
+<!-- ================= 1. POSITION ================= -->
+<section id="s-1" role="tabpanel" aria-labelledby="t-1">
+
+  <h2 class="mod">The chain of custody ladder</h2>
+  <p class="kicker">Every tonne bought sits on one of four rungs. The rung decides what may truthfully be said about it — and once volume is downgraded, it cannot be moved back up. Select a rung.</p>
+
+  <div class="panel">
+    <div class="ladder" id="ladder"></div>
+    <div class="ladder-detail" id="ladder-detail"></div>
+  </div>
+
+  <div class="stats" style="margin-top:24px">
+    <div><span class="n bean" id="s-grind">—</span><span class="l">Tonnes of bean ground annually across six origins</span></div>
+    <div><span class="n" id="s-plot">—</span><span class="l">Share of volume arriving with plot-level geolocation attached</span></div>
+    <div><span class="n alert" id="s-exposed">—</span><span class="l">Tonnes placed on the EU market that cannot yet support a due diligence statement</span></div>
+    <div><span class="n leaf" id="s-farms">71%</span><span class="l">Farms mapped in the direct programme — the number usually quoted internally</span></div>
+  </div>
+
+  <div class="finding" style="margin-top:24px">
+    <h4>The two numbers are not the same number</h4>
+    <p>71% of farms in the direct sourcing programme are polygon mapped. That is the figure in the sustainability report and in every sales conversation. But only 37% of the volume actually received arrives through a chain of custody that carries that mapping with it. Mapping a farm and mapping the beans you receive are different achievements, and the difference is roughly 70,000 tonnes of EU-bound volume with no defensible file behind it. Sixteen weeks before the regulation applies, this is the number that matters.</p>
+  </div>
+
+  <h3 class="sub">Three deadlines, one quarter, four owners</h3>
+  <p class="subnote">Each of these is currently held by a different function and treated as a separate project. They are the same problem seen from three angles: what the company can prove about where its cocoa came from.</p>
+  <div class="panel">
+    <div class="tl" id="timeline"></div>
+  </div>
+
+  <h3 class="sub">The strategic case, before the compliance case</h3>
+  <div class="grid2" style="margin-top:16px">
+    <div class="panel">
+      <h4 style="font-size:19px;margin-bottom:10px">Why this is a commercial asset</h4>
+      <div class="prose" style="font-size:14.5px">
+        <p>Buyers are already paying for verified deforestation-free material, and beans without traceability documentation have been turned away at origin ports. Traceability has stopped being a reporting attribute and become a price and access attribute.</p>
+        <p>A processor that can hand a customer a complete, assured file — origin, plot, cut-off date, chain of custody model, and the exact wording they may print — is selling something its competitors cannot. The company that can only hand over a certificate is selling a commodity.</p>
+        <p>That is the proposition. The compliance deadline is what makes it urgent, not what makes it valuable.</p>
+      </div>
+    </div>
+    <div class="panel">
+      <h4 style="font-size:19px;margin-bottom:10px">Why it has to survive an auditor</h4>
+      <div class="prose" style="font-size:14.5px">
+        <p>The customer's assurance provider will test the claim, not the intention. Three questions decide it: which chain of custody model carries this volume, what evidence establishes the cut-off date, and has this benefit been claimed by anyone else.</p>
+        <p>Every module here is built to answer those three in a form that can be handed over, which is why the register carries owners and expiry dates and the balance is reconciled per origin rather than in aggregate.</p>
+        <p>A proposition that cannot be assured is a proposition with a shelf life of one audit cycle.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 2. TRACEABILITY ================= -->
+<section id="s-2" role="tabpanel" aria-labelledby="t-2" hidden>
+  <h2 class="mod">Where the volume actually comes from</h2>
+  <p class="kicker">Origin by chain of custody tier. Hover any segment for the figure; select an origin for its position.</p>
+
+  <div class="panel">
+    <div id="origin-chart"></div>
+    <div class="legend">
+      <span><i style="background:#7FC49A"></i>Identity preserved</span>
+      <span><i style="background:#4E9468"></i>Mixed identity preserved</span>
+      <span><i style="background:#2F6B47"></i>Segregated</span>
+      <span><i style="background:#C98B3A"></i>Mass balance</span>
+    </div>
+  </div>
+
+  <div class="panel" id="origin-detail" style="margin-top:20px;border-left:3px solid var(--bean)"></div>
+
+  <h3 class="sub">Position against the deforestation cut-off</h3>
+  <p class="subnote">Volume placed on the EU market, tested against a 31 December 2020 reference date. The regulation does not accept an average.</p>
+  <div class="panel">
+    <div id="cutoff-chart"></div>
+    <div class="legend">
+      <span><i style="background:#4E9468"></i>Verified against the cut-off, file complete</span>
+      <span><i style="background:#6FA8BF"></i>Satellite screened, polygon reconciliation outstanding</span>
+      <span><i style="background:#E0577F"></i>No plot data — cannot be assessed</span>
+    </div>
+  </div>
+
+  <div class="finding amber">
+    <h4>Certification is not the answer to this</h4>
+    <p>Certification schemes state plainly that cocoa sourced through segregated or mass balance chains is not traceable to farm level, and that alignment therefore has to be established outside the certification system. A company that has answered the traceability question with a certificate has not answered it. The 90,300 tonnes on the mass balance rung need a separate route to plot data, or they need to stop being sold into the EU as a traceable product.</p>
+  </div>
+
+  <h3 class="sub">Closing the gap: four routes, ranked by what they actually buy</h3>
+  <table>
+    <thead><tr><th style="width:210px">Route</th><th>What it delivers</th><th style="width:120px">Volume reached</th><th style="width:110px">Lead time</th></tr></thead>
+    <tbody>
+      <tr><td><b>Upgrade cooperatives already in the direct programme</b></td><td>Plot polygons flow with the volume rather than sitting in a separate database. Lowest cost per tonne because the farmer relationship already exists — this is a data plumbing job, not a sourcing change.</td><td class="r">~22,000 t</td><td>8–12 weeks</td></tr>
+      <tr><td><b>Contract plot data from trader-supplied volume</b></td><td>Written data obligations with the intermediaries supplying the indirect 42%. Commercially uncomfortable and the reason it has not happened; it is also the only route that reaches the majority of the gap.</td><td class="r">~31,000 t</td><td>1–2 seasons</td></tr>
+      <tr><td><b>Reallocate EU-bound volume to traced origins</b></td><td>Ecuador's tier profile is far stronger than West Africa's. Serving the EU from traced origins and non-EU markets from the rest is available immediately, at a margin cost, and buys time rather than solving anything.</td><td class="r">~14,000 t</td><td>Immediate</td></tr>
+      <tr><td><b>Withdraw the claim, keep the volume</b></td><td>Sell untraced volume as untraced. Unpopular and always the last option considered, but it is the only one that carries no risk of a claim the file cannot support.</td><td class="r">Residual</td><td>Immediate</td></tr>
+    </tbody>
+  </table>
+  <p class="note">Sequencing matters more than the total. Routes one and three are available now and cover the volume most exposed to the December date; route two is the structural fix and will not land in this compliance cycle, which is an argument for starting it now rather than for deferring it.</p>
+</section>
+
+<!-- ================= 3. CLAIMS ================= -->
+<section id="s-3" role="tabpanel" aria-labelledby="t-3" hidden>
+  <h2 class="mod">Claims register</h2>
+  <p class="kicker">Every environmental and social sentence the company permits, with the chain of custody model that carries it, the evidence file, the owner and the decision. Select any row.</p>
+
+  <div class="filters" id="filters">
+    <button data-f="all" aria-pressed="true">All</button>
+    <button data-f="Approved" aria-pressed="false">Approved</button>
+    <button data-f="Conditional" aria-pressed="false">Conditional</button>
+    <button data-f="Withdrawn" aria-pressed="false">Withdrawn</button>
+  </div>
+  <table>
+    <thead><tr><th style="width:60px">Ref</th><th>Claim as worded</th><th style="width:132px">Carried by</th><th style="width:118px">Status</th><th style="width:110px">Owner</th></tr></thead>
+    <tbody id="claim-rows"></tbody>
+  </table>
+
+  <h3 class="sub">Claim balance, reconciled per origin</h3>
+  <p class="subnote">Certified volume held against certified volume sold. Origin matching means these must balance country by country, not in aggregate.</p>
+  <div class="panel">
+    <div id="balance-chart"></div>
+    <div class="legend">
+      <span><i style="background:#4E9468"></i>Headroom — held exceeds issued</span>
+      <span><i style="background:#E0577F"></i>Over-issued — claimed more than held</span>
+    </div>
+  </div>
+
+  <div class="finding">
+    <h4>A group surplus of 600 tonnes conceals origin breaches of 7,900</h4>
+    <p>Netted across all origins the book looks healthy, and that is exactly how it has been reported. Under origin matching it is not one book but six, and two of them are overdrawn — Ghana by 5,800 tonnes and the residual origin group by 2,100. Surplus in Côte d'Ivoire cannot settle a Ghanaian claim. The aggregate view is not a simplification of the truth here; it is the thing preventing anyone from seeing it.</p>
+  </div>
+</section>
+
+<!-- ================= 4. CARBON ================= -->
+<section id="s-4" role="tabpanel" aria-labelledby="t-4" hidden>
+  <h2 class="mod">What traceability is worth in carbon</h2>
+  <p class="kicker">The land use change method is not a technical footnote. It is the single largest number in a cocoa footprint, and the right to use the lower one is earned with plot data.</p>
+
+  <div class="grid2">
+    <div class="panel">
+      <div id="luc-chart"></div>
+    </div>
+    <div class="panel">
+      <h4 style="font-size:19px;margin-bottom:12px">Read this before the compliance argument</h4>
+      <div class="prose" style="font-size:14.5px">
+        <p>Statistical land use change applies a country-average conversion burden to every tonne from that origin, regardless of the individual plot. Direct land use change assesses the actual plot against the cut-off date. For West African cocoa the gap between the two is not a rounding difference; it is a multiple.</p>
+        <p>A company without plot data has no basis to use the direct method and must carry the country average. A company with plot data can evidence what happened on the land it actually bought from.</p>
+        <p>So the traceability investment and the carbon number are the same project. Every tonne moved off the mass balance rung is a tonne that can be assessed directly, and the customer's own FLAG inventory feels the difference immediately. That is the argument that unlocks the budget — not the deadline.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="sub">Methodology positions taken, and why they survive challenge</h3>
+  <table>
+    <thead><tr><th style="width:190px">Decision</th><th>Position</th></tr></thead>
+    <tbody>
+      <tr><td><b>Land use change method</b></td><td>Direct assessment only for volume with plot data verified against the 31 December 2020 reference date. Statistical country default for everything else, disclosed separately by volume rather than blended into a single average. A blended figure is the number most often published and the first one an assurance provider unpicks.</td></tr>
+      <tr><td><b>Agroforestry removals</b></td><td>Quantified but reported separately from reductions and never netted into a headline figure. Held out of customer-facing claims until permanence, reversal monitoring and traceability conditions under the Land Sector and Removals Standard are contracted, ahead of its effect from 1 January 2027.</td></tr>
+      <tr><td><b>Allocation across cocoa products</b></td><td>Economic allocation between butter, liquor, powder and cake, with the rule published. Butter and powder prices diverge sharply, so allocation choice moves a customer's ingredient footprint materially, and any switch is treated as a baseline recalculation rather than an improvement.</td></tr>
+      <tr><td><b>Primary data threshold</b></td><td>Every footprint issued states its primary data share by percentage of volume. A footprint that does not disclose this cannot be compared with a competitor's, and customers are beginning to ask for it before they ask for the number itself.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ================= 5. GOVERNANCE ================= -->
+<section id="s-5" role="tabpanel" aria-labelledby="t-5" hidden>
+  <h2 class="mod">Customer request desk</h2>
+  <p class="kicker">What a commercial colleague receives within a defined service level, instead of forwarding the question to whoever answered it last time.</p>
+
+  <div style="max-width:520px;margin-bottom:22px">
+    <select id="archetype" aria-label="Select the incoming request">
+      <option value="brand">Global confectionery brand — needs due diligence data and a Scope 3 figure</option>
+      <option value="retail">Retailer private label — wants the claim on consumer packaging</option>
+      <option value="auditor">Customer's assurance provider — testing the claim we already made</option>
+      <option value="tender">Procurement questionnaire — scored, 48-hour deadline</option>
+    </select>
+  </div>
+
+  <div class="panel">
+    <h4 style="font-size:20px" id="d-title">—</h4>
+    <p style="color:var(--bone-dim);font-size:13.5px;margin:6px 0 20px" id="d-meta">—</p>
+    <h5 style="font-family:var(--sans);font-size:12px;color:var(--bone-dim);margin:0 0 4px;font-weight:500">Approved wording</h5>
+    <p class="quote" id="d-good">—</p>
+    <h5 style="font-family:var(--sans);font-size:12px;color:var(--bone-dim);margin:0 0 4px;font-weight:500">Wording that must not be used</h5>
+    <p class="quote bad" id="d-bad">—</p>
+    <h5 style="font-family:var(--sans);font-size:12px;color:var(--bone-dim);margin:20px 0 6px;font-weight:500">Evidence pack released with it</h5>
+    <ul class="pack" id="d-pack"></ul>
+    <h5 style="font-family:var(--sans);font-size:12px;color:var(--bone-dim);margin:20px 0 4px;font-weight:500">The judgement call</h5>
+    <p class="verdict" id="d-risk">—</p>
+  </div>
+
+  <h3 class="sub">Decision rights</h3>
+  <p class="subnote">One accountable party per decision. Claims fail at the seams between functions, and the seam that matters most is the third row.</p>
+  <table class="raci">
+    <thead><tr><th>Decision</th><th class="c">Sustain&shy;ability</th><th class="c">Commercial</th><th class="c">Sourcing</th><th class="c">Quality</th><th class="c">Legal</th><th class="c">CSO</th></tr></thead>
+    <tbody>
+      <tr><td>Chain of custody model per contract</td><td class="c">A</td><td class="c">R</td><td class="c">C</td><td class="c">C</td><td class="c">I</td><td class="c">I</td></tr>
+      <tr><td>Methodology and boundary decisions</td><td class="c">A/R</td><td class="c">C</td><td class="c">C</td><td class="c">I</td><td class="c">I</td><td class="c">I</td></tr>
+      <tr><td>Claim wording released to a customer</td><td class="c">A</td><td class="c">R</td><td class="c">I</td><td class="c">I</td><td class="c">C</td><td class="c">I</td></tr>
+      <tr><td>Plot data collection and quality</td><td class="c">C</td><td class="c">I</td><td class="c">A/R</td><td class="c">C</td><td class="c">I</td><td class="c">I</td></tr>
+      <tr><td>Due diligence statement submission</td><td class="c">C</td><td class="c">I</td><td class="c">R</td><td class="c">I</td><td class="c">A</td><td class="c">I</td></tr>
+      <tr><td>Origin-matched volume allocation</td><td class="c">A</td><td class="c">R</td><td class="c">C</td><td class="c">I</td><td class="c">I</td><td class="c">I</td></tr>
+      <tr><td>Withdrawal of a claim in market</td><td class="c">R</td><td class="c">I</td><td class="c">I</td><td class="c">I</td><td class="c">C</td><td class="c">A</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="sub">Approval gates for a new claim</h3>
+  <ol class="gates">
+    <li><b>Intake and triage</b><span>New claim, or an existing register entry? Most requests are the second and should never reach a gate. Triage is what keeps the gates credible.</span></li>
+    <li><b>Chain of custody test</b><span>Which rung carries this volume, and does the proposed wording describe that rung or a higher one? This single question kills most bad claims before any methodology work begins.</span></li>
+    <li><b>Evidence and exclusivity</b><span>Cut-off date evidence, plot data status, and confirmation against the origin-matched balance that the benefit has not been sold twice.</span></li>
+    <li><b>Channel and restatement</b><span>Which markets, which channels, and precisely what the customer may print. Consumer-facing restatement is approved in writing or refused.</span></li>
+    <li><b>Release and expiry</b><span>Wording locked, owner named, review date set. A claim with no expiry becomes a legacy claim, and legacy claims are what enforcement finds first.</span></li>
+  </ol>
+
+  <h3 class="sub">Ranked readiness</h3>
+  <table>
+    <thead><tr><th style="width:46px">#</th><th>Gap</th><th style="width:130px">Clock</th><th style="width:110px">Exposure</th></tr></thead>
+    <tbody>
+      <tr><td class="cid">1</td><td>70,100 t of EU-bound volume without plot data attached to the receiving chain</td><td>30 Dec 2026</td><td><span class="pill p-stop">Severe</span></td></tr>
+      <tr><td class="cid">2</td><td>Traceability wording in market describes a chain of custody model the company does not operate for most of its volume</td><td>Now</td><td><span class="pill p-stop">Severe</span></td></tr>
+      <tr><td class="cid">3</td><td>Origin-matched claim balance not maintained; two origins overdrawn behind a group surplus</td><td>Now</td><td><span class="pill p-stop">Severe</span></td></tr>
+      <tr><td class="cid">4</td><td>Customer restatement on consumer packaging uncontrolled ahead of enforcement</td><td>27 Sep 2026</td><td><span class="pill p-cond">High</span></td></tr>
+      <tr><td class="cid">5</td><td>Blended land use change figure published without disclosing the method split by volume</td><td>1 Jan 2027</td><td><span class="pill p-cond">High</span></td></tr>
+      <tr><td class="cid">6</td><td>Absolute social claims in market with no verification route and no expiry date</td><td>Now</td><td><span class="pill p-cond">Moderate</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="sub">First ninety days</h3>
+  <div class="prose">
+    <p>Inventory every environmental and social sentence currently in market, in any channel and any language, and test each one against the chain of custody rung that carries the volume. That test alone resolves most of the register and costs nothing but attention.</p>
+    <p>Build the origin-matched balance from purchase and sales records and report it once. The first number is always the argument that starts the work.</p>
+    <p>Then run the two routes that can land before December — cooperative data plumbing and EU-bound volume reallocation — while opening the trader data negotiation that will not land this cycle and cannot be started later than now.</p>
+  </div>
+</section>
+
+</div></main>
+
+<footer><div class="wrap">
+  <p style="margin:0 0 9px"><b style="color:var(--bone)">Independent working model.</b> Prepared by Ali Mehmandoostkotlar. All quantitative data is synthetic and constructed for illustration. It describes no actual company and is not an assessment of any organisation's performance.</p>
+  <p style="margin:0 0 9px">Regulatory and standards references are real and current as at September 2026: Regulation (EU) 2023/1115 as amended by Regulation (EU) 2025/2650, applying to large and medium operators from 30 December 2026; Directive (EU) 2024/825, applying from 27 September 2026; GHG Protocol Land Sector and Removals Standard, effective 1 January 2027. Chain of custody tier definitions follow established certification scheme practice for cocoa.</p>
+  <p style="margin:0">The architecture — chain of custody test, claims register, origin-matched balance, methodology positions, decision rights — is sector-neutral and applies wherever a physical product carries an environmental or social claim.</p>
+</div></footer>
+
+<div class="tip" id="tip" role="status"></div>
+
+<script>
+/* ============ data ============ */
+const TIERS=[
+ {k:'ip',  name:'Identity preserved', sub:'Traceable to a named farm or group', c:'#7FC49A'},
+ {k:'mip', name:'Mixed identity preserved', sub:'Mixed, but known producer groups', c:'#4E9468'},
+ {k:'seg', name:'Segregated', sub:'Certified kept apart, origin not traced', c:'#2F6B47'},
+ {k:'mb',  name:'Mass balance', sub:'Certified and conventional commingled', c:'#C98B3A'}
+];
+const ORIGINS=[
+ {n:'Côte d\'Ivoire', ip:9000, mip:24800, seg:12000, mb:37000, held:37000, issued:34500,
+  note:'Largest origin and the weakest data position relative to its size. Just over 40% of the volume arrives through a chain that carries plot mapping, and the indirect trader share is the highest in the book. This is where both the compliance exposure and the carbon penalty concentrate.'},
+ {n:'Ghana', ip:1200, mip:8400, seg:4000, mb:26000, held:26000, issued:31800,
+  note:'Sourcing runs through licensed buying companies, so direct farmer relationships are structurally harder and the mass balance share is the highest of any origin. Ghana is also the origin where more certified volume has been sold than held — the largest single integrity finding in the model.'},
+ {n:'Ecuador', ip:11000, mip:7200, seg:3000, mb:4000, held:4000, issued:4000,
+  note:'Larger farm structures and stronger existing traceability make this the origin best positioned for the December date. It is the obvious candidate for reallocating EU-bound volume in the short term, at a landed cost premium.'},
+ {n:'Nigeria', ip:300, mip:1800, seg:1500, mb:9000, held:9000, issued:5000,
+  note:'Small volume, weak traceability, and headroom in the claim balance because little of it is sold as certified. The pragmatic position is to keep this volume out of EU-bound, claim-bearing product rather than to invest in mapping it this cycle.'},
+ {n:'Cameroon', ip:200, mip:1300, seg:1000, mb:6500, held:6500, issued:4500,
+  note:'Similar profile to Nigeria at smaller scale. Worth watching because customer interest in origin diversification is rising faster than the traceability infrastructure behind it.'},
+ {n:'Other origins', ip:400, mip:1400, seg:1200, mb:7800, held:7800, issued:9900,
+  note:'A residual group covering several small sources, and the second origin where certified sales exceed certified purchases. Residual categories are where balance breaches hide, because nobody owns them by name.'}
+];
+const LADDER={
+ ip:{may:['Name the cooperative or farm group the volume came from','State a plot-level deforestation-free position against the 31 December 2020 reference date','Use direct land use change assessment in the carbon footprint','Support a customer due diligence statement with geolocation data'],
+     mayNot:['Imply the whole product line shares this status'],
+     line:'The only rung on which a farm traceability claim is factually available. It is 12% of volume, and it is the rung every sales deck implicitly describes.'},
+ mip:{may:['Name the producer groups the volume came from','Support a due diligence statement where plot data has been collected and transferred','Use direct land use change assessment where the plot file is complete'],
+      mayNot:['Claim traceability to an individual farm','Claim a single named origin community for a specific consignment'],
+      line:'The workhorse rung. It carries enough to support most legitimate customer requirements, provided the wording says producer group rather than farm.'},
+ seg:{may:['State that certified and conventional material were never commingled','Use the certification mark under the scheme labelling policy'],
+      mayNot:['Claim origin traceability — segregation keeps certified apart but does not track where it came from','Support a due diligence statement from certification alone','Use direct land use change assessment'],
+      line:'Frequently mistaken for traceability, and it is not. Segregation answers "was it mixed?" It does not answer "where is it from?", which is the only question the regulation asks.'},
+ mb:{may:['State that an equivalent certified volume was purchased, with the model named','Use the certification mark where the scheme labelling policy permits it for mass balance'],
+     mayNot:['Claim traceability of any kind','State or imply a deforestation-free position for the physical product','Support a due diligence statement','Use direct land use change assessment'],
+     line:'Half the book sits here. Mass balance is a legitimate and widely used model — but it is an accounting equivalence, not a physical fact about the beans in the bag, and it must be named every time it is relied upon.'}
+};
+const CLAIMS=[
+ {id:'C-01',w:'Traceable from farm to factory',coc:'Requires IP',st:'Withdrawn',own:'Sustainability',
+  basis:'Asserted on the strength of the farmer database and the direct sourcing programme.',
+  ev:['Farm database exists and is 71% polygon mapped','No chain of custody evidence linking mapped farms to received volume'],
+  risk:'Describes an identity-preserved chain for volume that is 50% mass balance. The most repeated sentence in the company and the least supportable.',
+  ver:'Withdrawn rather than qualified. Knowing the farms is not tracing the beans, and a footnote does not repair a headline that says the opposite. Replaced by C-06, which is true of the volume it describes and costs the company almost nothing in commercial impact once explained.'},
+ {id:'C-02',w:'Deforestation-free cocoa',coc:'IP or mixed IP',st:'Conditional',own:'Legal',
+  basis:'Satellite screening across the sourcing footprint.',
+  ev:['Plot polygons for the covered volume','Forest cover assessment against 31 December 2020','Statement of the volume the assessment covers'],
+  risk:'Used without a stated reference date and applied to volume that has not been assessed. It also invites an inference of regulatory conformity that a due diligence statement, not a claim, establishes.',
+  ver:'Permitted only with the reference date stated and the covered volume named in the same sentence. An undated deforestation-free claim is not a strong claim missing a detail; it is a claim with no testable meaning.'},
+ {id:'C-03',w:'100% certified sustainable cocoa',coc:'Mass balance',st:'Conditional',own:'Commercial',
+  basis:'Certified volume purchases matching total volume sold as certified.',
+  ev:['Scheme certificates and volume reconciliation','Origin-matched balance per country','Scheme labelling policy conformity check'],
+  risk:'True under the certification scheme and misleading to a reader who assumes physical certified content. Also exposed to the origin-level balance breach.',
+  ver:'Conditional on the mass balance model being named wherever the claim appears, and on the origin balance clearing. The word certified is doing work here that most readers will misread, and the fix is one clause, not a redesign.'},
+ {id:'C-04',w:'Carbon neutral chocolate',coc:'Any',st:'Withdrawn',own:'CSO',
+  basis:'Residual footprint compensated with purchased credits.',
+  ev:['Retired credit registry records','Prior footprint calculation'],
+  risk:'Directive (EU) 2024/825 blacklists offset-based neutrality claims in consumer-facing use from 27 September 2026, with no transition period.',
+  ver:'Withdrawn entirely, not restricted to business-to-business use. A claim a customer cannot lawfully print has no value to that customer, and keeping it alive internally guarantees it eventually reaches a wrapper.'},
+ {id:'C-05',w:'EUDR compliant supply chain',coc:'Any',st:'Withdrawn',own:'Legal',
+  basis:'Certification coverage across the sourcing base.',
+  ev:['Scheme certificates','No due diligence statements submitted; the obligation does not yet apply'],
+  risk:'Certification does not establish conformity, and the regulation applies to large and medium operators from 30 December 2026. The claim asserts a status that cannot yet exist.',
+  ver:'Withdrawn and replaced with a factual statement about the due diligence system in operation. Claiming compliance with a regulation before its application date is the kind of overreach that damages credibility on everything else in the file.'},
+ {id:'C-06',w:'Sourced from 214 cooperatives across our direct programme, 71% of them polygon mapped',coc:'Any',st:'Approved',own:'Sourcing',
+  basis:'Programme records, restated annually.',
+  ev:['Cooperative register','Mapping completion records with date','Annual restatement procedure'],
+  risk:'Low. Descriptive, specific, dated, and makes no performance assertion.',
+  ver:'The most durable entry in the register precisely because it quantifies effort rather than benefit. Specific descriptive claims survive regulatory change; adjectives do not. It expires if the figures are not restated each year.'},
+ {id:'C-07',w:'Child labour free supply chain',coc:'Any',st:'Withdrawn',own:'Legal',
+  basis:'Monitoring and remediation system operating across the direct programme.',
+  ev:['Monitoring coverage by cooperative','Cases identified and remediated','Coverage gap in indirect volume'],
+  risk:'An absolute negative claim across a smallholder supply chain that cannot be verified and would be falsified by a single case, including one the monitoring system itself found.',
+  ver:'The most dangerous claim in the register, and the one most often defended internally as obviously well-intentioned. A system that finds cases is working; a claim that no cases exist punishes the company for finding them. Replaced with a coverage and remediation claim that is verifiable and that improves as the programme improves.'},
+ {id:'C-08',w:'Living income premium paid to our farmers',coc:'Any',st:'Conditional',own:'Sustainability',
+  basis:'Premium paid at cooperative level.',
+  ev:['Premium payment records to cooperatives','Pass-through evidence to individual farmers','Statement of what proportion reaches the farm gate'],
+  risk:'Payment to a cooperative is not receipt by a farmer. Without pass-through evidence the claim rests on an assumption the company has not tested.',
+  ver:'Conditional on pass-through evidence at farmer level for the volume claimed. Social claims are held to the same evidence standard as carbon claims here, because customers and assurance providers are converging on treating them the same way.'},
+ {id:'C-09',w:'Our agroforestry programme removes carbon from the atmosphere',coc:'IP or mixed IP',st:'Conditional',own:'Sustainability',
+  basis:'Shade tree establishment across enrolled plots.',
+  ev:['Removal quantification and uncertainty statement','Reversal monitoring arrangement','Separate reporting from reductions'],
+  risk:'The Land Sector and Removals Standard takes effect for reporting year 2027 with traceability and data quality conditions on scope 3 removals. Netting removals into a reduction figure fails on first inspection.',
+  ver:'Released as data, not as a headline, and only where the customer confirms separate reporting. The temptation to net removals against emissions produces a better number and a shorter shelf life.'}
+];
+const DESK={
+ brand:{t:'Global confectionery brand — due diligence data and a Scope 3 figure',
+  m:'Tier 2. Ten working days. Owner: sustainability, released by commercial.',
+  good:'For volume delivered under contract 2026-11, 62% arrived through identity preserved or mixed identity preserved chains with plot geolocation attached, assessed directly against a 31 December 2020 reference date. The remaining 38% is mass balance and carries a statistical land use change burden. Both figures and the split are stated in the attached footprint; they are not blended.',
+  bad:'Our cocoa is fully traceable and deforestation-free.',
+  pack:['Volume split by chain of custody tier for the contract period','Plot geolocation file in the format the customer\'s system accepts','Cut-off date assessment method and coverage statement','Footprint with direct and statistical land use change reported separately','Primary data share as a percentage of volume','Origin-matched balance confirmation for the certified portion'],
+  risk:'This number goes into an assured inventory, which means their auditor will eventually ask us the question they cannot answer. Disclosing the 62/38 split before being asked is what separates a supplier who gets renewed from one who gets a questionnaire. The instinct to send a single blended figure because it looks better is precisely the instinct that fails the following year.'},
+ retail:{t:'Retailer private label — claim intended for consumer packaging',
+  m:'Tier 3. Escalate at intake. Owner: sustainability and legal jointly.',
+  good:'Made with cocoa sourced through our direct programme, covering 214 cooperatives. Certified on a mass balance basis, meaning an equivalent volume of certified cocoa was purchased.',
+  bad:'Made with 100% traceable, deforestation-free, carbon neutral cocoa.',
+  pack:['Written approval of the exact pack wording, per SKU','Substantiation file formatted for the retailer\'s own compliance review','Explicit statement that no offset-based neutrality claim is supported','Named contact and response time for enforcement enquiries','Re-confirmation clause tied to the claim expiry date'],
+  risk:'Highest exposure request in the desk. Our business-to-business statement becomes their consumer claim under Directive (EU) 2024/825, enforceable from 27 September 2026 with no transition period, and their regulator reads the pack while their lawyer reads our email. Approve exact wording in writing or decline. An informal yes on a call is the failure mode that ends up in an enforcement file with our name on it.'},
+ auditor:{t:'Customer\'s assurance provider — testing a claim we already made',
+  m:'Tier 2, fixed protocol. Owner: sustainability. Legal informed, not involved unless the claim is contested.',
+  good:'Here is the claim as issued, the register entry with its owner and expiry, the chain of custody model carrying the volume, the origin-matched balance for the period, and the sample of transaction records behind it. Two exceptions are noted below before you find them.',
+  bad:'We will need to come back to you on how that figure was derived.',
+  pack:['Register entry showing owner, evidence list, approval date and expiry','Chain of custody reconciliation for the volume in scope','Origin-matched balance with the period cut-off applied','Transaction-level sample with source documents','Methodology note covering allocation, land use change method and boundary','Written log of known exceptions and their remediation status'],
+  risk:'The whole model is built for this conversation. An assurance provider is not testing whether the company is sustainable; they are testing whether the claim is supported, consistently applied and free of contradiction elsewhere in the file. Volunteering the two known exceptions before they are found is not a weakness — it converts a findings discussion into a scope discussion, and it is the single behaviour that most improves an assurance outcome.'},
+ tender:{t:'Procurement questionnaire — scored, 48-hour deadline',
+  m:'Tier 1. Answer bank response within two working days. No new claims, no exceptions.',
+  good:'Answers drawn verbatim from the maintained answer bank, each citing its register reference so the reviewer can see the claim has an owner and an expiry date.',
+  bad:'Free-text answers written overnight by whoever picked up the tender, tuned to score well.',
+  pack:['Maintained answer bank, reviewed quarterly','Register reference cited for every claim used','Standard evidence annex','Explicit list of questions requiring escalation, sent with the response rather than left blank'],
+  risk:'Deadline pressure is where claims are invented. A tender answer is a written representation that outlives the tender and gets quoted back years later, usually by someone who was not in the room. The service standard exists so the accurate answer is also the fastest one — because if answering correctly takes longer than answering loosely, people will answer loosely.'}
+};
+
+/* ============ helpers ============ */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const fmt=n=>Math.round(n).toLocaleString('en-GB');
+const SVG='http://www.w3.org/2000/svg';
+function el(t,a={}){const e=document.createElementNS(SVG,t);for(const k in a)e.setAttribute(k,a[k]);return e;}
+const tip=$('#tip');
+function showTip(e,html){tip.innerHTML=html;tip.style.opacity=1;moveTip(e);}
+function moveTip(e){const x=Math.min(e.clientX+14,innerWidth-262);tip.style.left=x+'px';tip.style.top=(e.clientY+16)+'px';}
+function hideTip(){tip.style.opacity=0;}
+
+const TOT=ORIGINS.reduce((s,o)=>s+o.ip+o.mip+o.seg+o.mb,0);
+const TIERTOT={}; TIERS.forEach(t=>TIERTOT[t.k]=ORIGINS.reduce((s,o)=>s+o[t.k],0));
+const PLOT=TIERTOT.ip+TIERTOT.mip;
+const EU=Math.round(TOT*0.62);
+const EU_PLOT=41500, EU_SCREEN=34200, EU_NONE=EU-EU_PLOT-EU_SCREEN;
+
+/* ============ tabs ============ */
+$$('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  $$('.tabs button').forEach(x=>{
+    const on=x===b; x.setAttribute('aria-selected',on);
+    document.getElementById(x.getAttribute('aria-controls')).hidden=!on;
+  });
+  window.scrollTo(0,0);
+}));
+
+/* ============ headline stats ============ */
+$('#s-grind').textContent=fmt(TOT);
+$('#s-plot').textContent=(PLOT/TOT*100).toFixed(0)+'%';
+$('#s-exposed').textContent=fmt(EU-EU_PLOT);
+
+/* ============ ladder ============ */
+const ladder=$('#ladder');
+let activeRung='mb';
+TIERS.forEach(t=>{
+  const v=TIERTOT[t.k], pct=v/TOT*100;
+  const row=document.createElement('div');
+  row.className='rung';row.tabIndex=0;row.setAttribute('role','button');
+  row.setAttribute('aria-pressed',t.k===activeRung);
+  row.innerHTML=`<div class="rung-name" style="border-color:${t.c}">${t.name}<small>${t.sub}</small></div>
+    <div class="rung-track"><div class="rung-fill" style="width:0;background:${t.c}"></div></div>
+    <div class="rung-val">${fmt(v)} t<small>${pct.toFixed(1)}% of book</small></div>`;
+  const act=()=>{activeRung=t.k;drawRungDetail();$$('.rung').forEach((r,i)=>r.setAttribute('aria-pressed',TIERS[i].k===activeRung));};
+  row.addEventListener('click',act);
+  row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();act();}});
+  ladder.appendChild(row);
+  requestAnimationFrame(()=>setTimeout(()=>{row.querySelector('.rung-fill').style.width=pct+'%';},80));
+});
+function drawRungDetail(){
+  const t=TIERS.find(x=>x.k===activeRung), d=LADDER[activeRung];
+  $('#ladder-detail').innerHTML=`<h4 style="color:${t.c}">${t.name} — ${fmt(TIERTOT[activeRung])} tonnes</h4>
+    <p style="color:#D3D2C6;font-size:14.5px;max-width:76ch">${d.line}</p>
+    ${d.may.map(x=>`<p class="can">${x}</p>`).join('')}
+    ${d.mayNot.map(x=>`<p class="cannot">${x}</p>`).join('')}`;
+}
+drawRungDetail();
+
+/* ============ timeline ============ */
+(function(){
+  const marks=[
+   {d:'27 Sep 2026',t:'Directive (EU) 2024/825 enforceable. Generic environmental claims and offset-based neutrality banned in consumer-facing use, with no transition period.',own:'Held by marketing',c:'#E0577F',pos:0},
+   {d:'30 Dec 2026',t:'EUDR applies to large and medium operators. Plot geolocation and a due diligence statement required for volume placed on the EU market.',own:'Held by procurement',c:'#E0577F',pos:26},
+   {d:'1 Jan 2027',t:'Land Sector and Removals Standard takes effect. Land emissions and removals reported separately and at higher granularity.',own:'Held by the carbon team',c:'#C98B3A',pos:52},
+   {d:'30 Jun 2027',t:'EUDR applies to micro and small operators, including cooperatives in the supply base that are expected to supply the plot data.',own:'Held by nobody',c:'#6FA8BF',pos:78}
+  ];
+  const tl=$('#timeline');
+  tl.innerHTML=`<div class="tl-now">8 September 2026 — sixteen weeks to the first hard date</div><div class="tl-axis" id="axis"></div>`;
+  const axis=$('#axis');
+  marks.forEach(m=>{
+    const d=document.createElement('div');
+    d.className='tl-mark';d.style.left=m.pos+'%';
+    d.innerHTML=`<div class="dot" style="border-color:${m.c}"></div>
+      <div class="d" style="color:${m.c}">${m.d}</div><div class="t">${m.t}</div><div class="own">${m.own}</div>`;
+    axis.appendChild(d);
+  });
+})();
+
+/* ============ origin chart ============ */
+(function(){
+  const W=920,rowH=44,padL=132,padR=70,H=ORIGINS.length*rowH+34;
+  const max=Math.max(...ORIGINS.map(o=>o.ip+o.mip+o.seg+o.mb));
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,class:'chart',role:'img','aria-label':'Volume by origin and chain of custody tier'});
+  ORIGINS.forEach((o,i)=>{
+    const y=i*rowH+8, tot=o.ip+o.mip+o.seg+o.mb;
+    const lab=el('text',{x:0,y:y+20,class:'lab'});lab.textContent=o.n;svg.appendChild(lab);
+    let x=padL;
+    TIERS.forEach(t=>{
+      const w=o[t.k]/max*(W-padL-padR);
+      const r=el('rect',{x,y:y+4,width:Math.max(w,0),height:24,fill:t.c,class:'seg'});
+      r.addEventListener('mousemove',e=>showTip(e,`<b>${o.n} — ${t.name}</b><span class="mono">${fmt(o[t.k])} t</span> · ${(o[t.k]/tot*100).toFixed(0)}% of this origin`));
+      r.addEventListener('mouseleave',hideTip);
+      r.addEventListener('click',()=>selectOrigin(i));
+      svg.appendChild(r);x+=w;
+    });
+    const f=el('text',{x:x+9,y:y+22,class:'fig'});f.textContent=fmt(tot)+' t';svg.appendChild(f);
+  });
+  $('#origin-chart').appendChild(svg);
+})();
+function selectOrigin(i){
+  const o=ORIGINS[i], tot=o.ip+o.mip+o.seg+o.mb, plot=(o.ip+o.mip)/tot*100;
+  $('#origin-detail').innerHTML=`<h4 style="font-size:20px;margin-bottom:8px">${o.n}</h4>
+    <p style="max-width:78ch;color:#D3D2C6;font-size:14.5px">${o.note}</p>
+    <div style="display:flex;flex-wrap:wrap;gap:34px;margin-top:14px;font-size:13px">
+      <span><span class="mono" style="font-size:19px;display:block">${fmt(tot)} t</span><span style="color:var(--bone-dim)">annual volume</span></span>
+      <span><span class="mono" style="font-size:19px;display:block;color:${plot<50?'var(--alert)':'var(--leaf)'}">${plot.toFixed(0)}%</span><span style="color:var(--bone-dim)">carries plot data</span></span>
+      <span><span class="mono" style="font-size:19px;display:block;color:${o.issued>o.held?'var(--alert)':'var(--leaf)'}">${o.issued>o.held?'−':'+'}${fmt(Math.abs(o.held-o.issued))} t</span><span style="color:var(--bone-dim)">claim balance</span></span>
+    </div>`;
+}
+selectOrigin(0);
+
+/* ============ cutoff chart ============ */
+(function(){
+  const W=920,H=118,padT=26;
+  const parts=[{l:'Verified against the cut-off',v:EU_PLOT,c:'#4E9468'},
+               {l:'Satellite screened, reconciliation outstanding',v:EU_SCREEN,c:'#6FA8BF'},
+               {l:'No plot data — cannot be assessed',v:EU_NONE,c:'#E0577F'}];
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,class:'chart',role:'img','aria-label':'EU-placed volume against the deforestation cut-off date'});
+  let x=0;
+  parts.forEach(p=>{
+    const w=p.v/EU*W;
+    const r=el('rect',{x,y:padT,width:w,height:44,fill:p.c,class:'seg'});
+    r.addEventListener('mousemove',e=>showTip(e,`<b>${p.l}</b><span class="mono">${fmt(p.v)} t</span> · ${(p.v/EU*100).toFixed(0)}% of EU-placed volume`));
+    r.addEventListener('mouseleave',hideTip);
+    svg.appendChild(r);
+    const t1=el('text',{x:x+2,y:padT+66,class:'fig',fill:p.c});t1.textContent=fmt(p.v)+' t';svg.appendChild(t1);
+    const t2=el('text',{x:x+2,y:padT+84});t2.textContent=(p.v/EU*100).toFixed(0)+'%';svg.appendChild(t2);
+    x+=w;
+  });
+  const cap=el('text',{x:0,y:16,class:'lab'});cap.textContent=`${fmt(EU)} tonnes placed on the EU market`;svg.appendChild(cap);
+  $('#cutoff-chart').appendChild(svg);
+})();
+
+/* ============ claims register ============ */
+const rows=$('#claim-rows');
+let filter='all';
+const pcls=s=>s==='Approved'?'p-ok':s==='Conditional'?'p-cond':'p-stop';
+function renderClaims(){
+  rows.innerHTML='';
+  CLAIMS.filter(c=>filter==='all'||c.st===filter).forEach(c=>{
+    const tr=document.createElement('tr');
+    tr.dataset.row='1';tr.tabIndex=0;tr.setAttribute('aria-expanded','false');
+    tr.innerHTML=`<td class="cid">${c.id}</td><td>${c.w}</td><td style="color:var(--bone-dim)">${c.coc}</td>
+      <td><span class="pill ${pcls(c.st)}">${c.st}</span></td><td style="color:var(--bone-dim)">${c.own}</td>`;
+    const dr=document.createElement('tr');dr.className='det';dr.hidden=true;
+    dr.innerHTML=`<td colspan="5"><p class="verdict">${c.ver}</p><div class="dg">
+      <div><h5>Basis</h5><p>${c.basis}</p></div>
+      <div><h5>Evidence on file</h5><ul>${c.ev.map(e=>`<li>${e}</li>`).join('')}</ul></div>
+      <div><h5>Principal risk</h5><p>${c.risk}</p></div></div></td>`;
+    const tog=()=>{const o=dr.hidden;dr.hidden=!o;tr.setAttribute('aria-expanded',o);};
+    tr.addEventListener('click',tog);
+    tr.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tog();}});
+    rows.append(tr,dr);
+  });
+}
+$$('#filters button').forEach(b=>b.addEventListener('click',()=>{
+  $$('#filters button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  filter=b.dataset.f;renderClaims();
+}));
+renderClaims();
+
+/* ============ balance chart ============ */
+(function(){
+  const W=920,rowH=46,padL=132,H=ORIGINS.length*rowH+40,mid=padL+((W-padL-40)/2);
+  const max=Math.max(...ORIGINS.map(o=>Math.abs(o.held-o.issued)),6000);
+  const scale=((W-padL-40)/2)/max;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,class:'chart',role:'img','aria-label':'Claim balance by origin'});
+  svg.appendChild(el('line',{x1:mid,y1:6,x2:mid,y2:H-26,stroke:'#31473C','stroke-width':1}));
+  ORIGINS.forEach((o,i)=>{
+    const y=i*rowH+10, diff=o.held-o.issued, w=Math.abs(diff)*scale;
+    const lab=el('text',{x:0,y:y+22,class:'lab'});lab.textContent=o.n;svg.appendChild(lab);
+    const r=el('rect',{x:diff>=0?mid:mid-w,y:y+6,width:Math.max(w,1.5),height:24,
+      fill:diff>=0?'#4E9468':'#E0577F',class:'seg'});
+    r.addEventListener('mousemove',e=>showTip(e,`<b>${o.n}</b>Held <span class="mono">${fmt(o.held)} t</span><br>Issued <span class="mono">${fmt(o.issued)} t</span><br>${diff>=0?'Headroom':'Over-issued'} <span class="mono">${fmt(Math.abs(diff))} t</span>`));
+    r.addEventListener('mouseleave',hideTip);
+    svg.appendChild(r);
+    const f=el('text',{x:diff>=0?mid+w+9:mid-w-9,y:y+24,class:'fig',
+      'text-anchor':diff>=0?'start':'end',fill:diff>=0?'#4E9468':'#E0577F'});
+    f.textContent=diff===0?'balanced':(diff>0?'+':'−')+fmt(Math.abs(diff))+' t';svg.appendChild(f);
+  });
+  const c1=el('text',{x:mid-10,y:H-8,'text-anchor':'end',fill:'#E0577F'});c1.textContent='over-issued';svg.appendChild(c1);
+  const c2=el('text',{x:mid+10,y:H-8});c2.textContent='headroom';svg.appendChild(c2);
+  $('#balance-chart').appendChild(svg);
+})();
+
+/* ============ LUC chart ============ */
+(function(){
+  const W=520,H=330,base=1.9,dluc=0.4,sluc=6.8,BW=W-52;
+  const bars=[
+   {l:'Direct assessment',s:'plot verified against the cut-off date',v:base+dluc,luc:dluc,c:'#4E9468',cov:PLOT},
+   {l:'Statistical default',s:'country average applied to every tonne',v:base+sluc,luc:sluc,c:'#E0577F',cov:TOT-PLOT}
+  ];
+  const max=base+sluc, padT=50, bh=50, gap=132;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,class:'chart',role:'img','aria-label':'Footprint under direct versus statistical land use change'});
+  const ttl=el('text',{x:0,y:16,class:'lab'});ttl.textContent='kg CO₂e per kg of cocoa bean, cradle to gate';svg.appendChild(ttl);
+  bars.forEach((b,i)=>{
+    const y=padT+i*gap;
+    const l1=el('text',{x:0,y:y-8,class:'lab'});l1.textContent=b.l;svg.appendChild(l1);
+    const l2=el('text',{x:0,y:y+bh+20});l2.textContent=b.s;svg.appendChild(l2);
+    const l3=el('text',{x:0,y:y+bh+38});l3.textContent='applies to '+fmt(b.cov)+' t of the book';svg.appendChild(l3);
+    const wb=base/max*BW, wl=b.luc/max*BW;
+    const r1=el('rect',{x:0,y,width:wb,height:bh,fill:'#2F6B47',class:'seg'});
+    r1.addEventListener('mousemove',e=>showTip(e,`<b>Cultivation and processing</b><span class="mono">${base.toFixed(1)} kg CO₂e/kg</span>`));
+    r1.addEventListener('mouseleave',hideTip);
+    const r2=el('rect',{x:wb,y,width:wl,height:bh,fill:b.c,class:'seg'});
+    r2.addEventListener('mousemove',e=>showTip(e,`<b>Land use change — ${b.l.toLowerCase()}</b><span class="mono">${b.luc.toFixed(1)} kg CO₂e/kg</span>`));
+    r2.addEventListener('mouseleave',hideTip);
+    svg.append(r1,r2);
+    const f=el('text',{x:wb+wl+10,y:y+bh/2+5,class:'fig',fill:b.c});
+    f.textContent=b.v.toFixed(1);svg.appendChild(f);
+  });
+  const note=el('text',{x:0,y:H-10,fill:'#C98B3A'});
+  note.textContent='A '+((base+sluc)/(base+dluc)).toFixed(1)+'× difference, decided by whether plot data exists.';
+  svg.appendChild(note);
+  $('#luc-chart').appendChild(svg);
+})();
+
+/* ============ desk ============ */
+const sel=$('#archetype');
+function drawDesk(){
+  const d=DESK[sel.value];
+  $('#d-title').textContent=d.t;$('#d-meta').textContent=d.m;
+  $('#d-good').textContent=d.good;$('#d-bad').textContent=d.bad;
+  $('#d-pack').innerHTML=d.pack.map(x=>`<li>${x}</li>`).join('');
+  $('#d-risk').textContent=d.risk;
+}
+sel.addEventListener('change',drawDesk);drawDesk();
+document.addEventListener('mousemove',e=>{if(tip.style.opacity==1)moveTip(e);});
+</script>
+</body>
+</html>
